@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int           @id @default(autoincrement())
+  name           String?
+  email          String?       @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relationships
+  accounts       Account[]
+  messages       Message[]
+  conversations  UserConversation[]
+  seenMessages   UserSeenMessage[]
+}
+
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Conversation {
+  id            Int       @id @default(autoincrement())
+  createdAt     DateTime  @default(now())
+  lastMessageAt DateTime  @default(now())
+  name          String?
+  isGroup       Boolean?
+
+  // Relationships
+  messages      Message[]
+  users         UserConversation[]
+}
+
+// Junction table for User-Conversation many-to-many relationship
+model UserConversation {
+  userId         Int
+  conversationId Int
+  
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  @@id([userId, conversationId])
+}
+
+model Message {
+  id            Int      @id @default(autoincrement())
+  body          String?  @db.Text
+  image         String?
+  createdAt     DateTime @default(now())
+  
+  // Foreign keys
+  conversationId Int
+  senderId       Int
+
+  // Relationships
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User             @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  seenBy         UserSeenMessage[]
+}
+
+// Junction table for Message-User seen relationship
+model UserSeenMessage {
+  userId    Int
+  messageId Int
+  
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@id([userId, messageId])
+}
+
+
+
+
