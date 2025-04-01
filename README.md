@@ -40,7 +40,7 @@ The Messenger Clone comes packed with a range of features to make messaging a de
 
 Follow these simple steps to set up the project on your local machine:
 
-1. Clone the repository: `git clone https://github.com/ayusshrathore/messenger-clone.git`
+1. Clone the repository: `git clone https://github.com/sandeepsalwan1/AiMessage"
 2. Navigate to the project directory: `cd messenger-clone`
 3. Install dependencies: `npm install`
 
