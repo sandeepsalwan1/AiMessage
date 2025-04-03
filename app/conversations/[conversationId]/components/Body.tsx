@@ -1,72 +1,91 @@
 "use client";
 
-import useConversation from "@/app/hooks/useConversation";
+import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
+import { Message, User } from "@prisma/client";
 import { pusherClient } from "@/app/libs/pusher";
-import { FullMessageType } from "@/app/types";
-import axios from "axios";
 import { find } from "lodash";
-import { FC, useEffect, useRef, useState } from "react";
 import MessageBox from "./MessageBox";
+import { FullMessageType } from "@/app/types";
 
-interface BodyProps {
-  initialMessages: FullMessageType[];
+interface MentalHealthInsight {
+  id: number;
+  messageId: number;
+  sentimentScore: number;
+  emotionalState: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  keywords: string | null;
+  recommendations: string | null;
+  createdAt: Date;
 }
 
-const Body: FC<BodyProps> = ({ initialMessages }) => {
-  const [messages, setMessages] = useState(initialMessages);
+interface ExtendedMessageType extends FullMessageType {
+  mentalHealthInsights?: MentalHealthInsight[];
+}
+
+interface BodyProps {
+  initialMessages: ExtendedMessageType[];
+  conversationId: string;
+}
+
+const Body: React.FC<BodyProps> = ({ initialMessages, conversationId }) => {
+  const [messages, setMessages] = useState<ExtendedMessageType[]>(initialMessages);
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  const { conversationId } = useConversation();
-
-  useEffect(() => {
-    axios.post(`/api/conversations/${conversationId}/seen`);
-  }, [conversationId]);
+  const { data: session } = useSession();
 
   useEffect(() => {
-    pusherClient.subscribe(conversationId);
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!pusherClient) {
+      console.error("Pusher client is not initialized");
+      return;
+    }
 
-    const messageHandler = (message: FullMessageType) => {
-      axios.post(`/api/conversations/${conversationId}/seen`);
-      setMessages((messages) => {
-        if (find(messages, { id: message.id })) {
-          return messages;
-        }
+    console.log("Subscribing to channel:", `presence-conversation-${conversationId}`);
+    const channel = pusherClient.subscribe(`presence-conversation-${conversationId}`);
 
-        return [...messages, message];
-      });
+    const messageHandler = (message: ExtendedMessageType) => {
+      console.log("Received message:", message);
+      
+      if (find(messages, { id: message.id })) {
+        console.log("Message already exists, skipping");
+        return;
+      }
 
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      console.log("Adding new message to state");
+      setMessages((current) => [...current, message]);
+
+      // Check for mental health insights
+      if (message.mentalHealthInsights && message.mentalHealthInsights.length > 0) {
+        console.log("Mental health insights found:", message.mentalHealthInsights);
+      }
     };
 
-    const updateMessageHandler = (message: FullMessageType) => {
-      setMessages((current) =>
-        current.map((m) => {
-          if (m.id === message.id) {
-            return message;
-          }
-
-          return m;
-        })
-      );
-    };
-
-    pusherClient.bind("messages:new", messageHandler);
-    pusherClient.bind("message:update", updateMessageHandler);
+    // Bind to the channel's messages:new event
+    channel.bind("messages:new", messageHandler);
 
     return () => {
-      pusherClient.unsubscribe(conversationId);
-      pusherClient.unbind("messages:new", messageHandler);
-      pusherClient.unbind("message:update", updateMessageHandler);
+      console.log("Unsubscribing from channel:", `presence-conversation-${conversationId}`);
+      if (pusherClient) {
+        channel.unbind("messages:new", messageHandler);
+        pusherClient.unsubscribe(`presence-conversation-${conversationId}`);
+      }
     };
-  }, [conversationId]);
+  }, [conversationId, messages]);
+
+  useEffect(() => {
+    bottomRef?.current?.scrollIntoView();
+  }, [messages]);
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {messages.map((message, index) => (
-        <MessageBox isLast={index === messages.length - 1} key={message.id} message={message} />
+      {messages.map((message) => (
+        <div key={message.id}>
+          <MessageBox
+            message={message}
+            isLast={messages.indexOf(message) === messages.length - 1}
+          />
+        </div>
       ))}
-      <div ref={bottomRef} className="pt-24" />
+      <div ref={bottomRef} />
     </div>
   );
 };

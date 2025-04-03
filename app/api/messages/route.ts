@@ -1,71 +1,152 @@
-import getCurrentUser from "@/app/actions/getCurrentUser";
-import prisma from "@/app/libs/prismadb";
-import { pusherServer } from "@/app/libs/pusher";
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/app/libs/prismadb";
+import { analyzeMentalHealth, shouldTriggerAlert } from "@/app/utils/mentalHealth";
+import { pusherServer } from "@/app/libs/pusher";
+import { Prisma } from "@prisma/client";
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const currentUser = await getCurrentUser();
-    const body = await req.json();
+    const session = await getServerSession(authOptions);
+    const { message, image, conversationId } = await request.json();
 
-    const { message, image, conversationId } = body;
-
-    if (!currentUser?.id || !currentUser.email) {
+    if (!session?.user?.email) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Validate conversationId
     if (!conversationId) {
-      return new NextResponse("Missing conversationId", { status: 400 });
+      return new NextResponse("Conversation ID is required", { status: 400 });
     }
 
-    // Parse conversationId safely
-    const parsedConversationId = parseInt(conversationId);
-    if (isNaN(parsedConversationId)) {
-      return new NextResponse("Invalid conversationId format", { status: 400 });
+    if (!message) {
+      return new NextResponse("Message is required", { status: 400 });
     }
 
-    try {
-      // Create the new message
-      const newMessage = await prisma.message.create({
+    const currentUser = await prisma.user.findUnique({
+      where: {
+        email: session.user.email,
+      },
+    });
+
+    if (!currentUser) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    // Convert conversationId to number
+    const numericConversationId = parseInt(conversationId, 10);
+    if (isNaN(numericConversationId)) {
+      return new NextResponse("Invalid conversation ID", { status: 400 });
+    }
+
+    // Analyze message for mental health insights
+    const mentalHealthAnalysis = analyzeMentalHealth(message);
+
+    // Create the message with transaction to ensure both message and insight are created
+    const result = await prisma.$transaction(async (tx) => {
+      // Create message
+      const newMessage = await tx.message.create({
         data: {
           body: message,
-          image,
-          conversation: {
-            connect: {
-              id: parsedConversationId,
-            },
-          },
-          sender: {
-            connect: {
-              id: currentUser.id,
-            },
-          },
+          image: image,
+          conversationId: numericConversationId,
+          senderId: currentUser.id,
+          seenBy: {
+            create: {
+              userId: currentUser.id
+            }
+          }
         },
         include: {
-          sender: true,
           seenBy: {
             include: {
               user: true
             }
           },
-        },
-      });
-
-      // Create the seen relationship separately
-      await prisma.userSeenMessage.create({
-        data: {
-          userId: currentUser.id,
-          messageId: newMessage.id
+          sender: true
         }
       });
 
-      const updatedConversation = await prisma.conversation.update({
+      // Create mental health insight using raw SQL
+      const query = Prisma.sql`
+        INSERT INTO MentalHealthInsight (
+          messageId, 
+          sentimentScore, 
+          emotionalState, 
+          riskLevel, 
+          keywords, 
+          recommendations, 
+          createdAt
+        ) VALUES (
+          ${newMessage.id},
+          ${mentalHealthAnalysis.sentimentScore},
+          ${mentalHealthAnalysis.emotionalState},
+          ${mentalHealthAnalysis.riskLevel},
+          ${mentalHealthAnalysis.keywords.join(',')},
+          ${mentalHealthAnalysis.recommendations.join('\n')},
+          NOW()
+        )
+      `;
+      await tx.$executeRaw(query);
+
+      // Fetch the message with mental health insights
+      const messageWithInsights = await tx.message.findUnique({
+        where: { id: newMessage.id },
+        include: {
+          seenBy: {
+            include: {
+              user: true
+            }
+          },
+          sender: true,
+          mentalHealthInsights: true
+        }
+      });
+
+      return messageWithInsights || newMessage;
+    });
+
+    // Update conversation last message time
+    await prisma.conversation.update({
+      where: {
+        id: numericConversationId
+      },
+      data: {
+        lastMessageAt: new Date()
+      }
+    });
+
+    // Trigger Pusher events
+    try {
+      // Fetch the message with mental health insights for Pusher
+      const messageForPusher = await prisma.message.findUnique({
+        where: { id: result.id },
+        include: {
+          seenBy: {
+            include: {
+              user: true
+            }
+          },
+          sender: true,
+          mentalHealthInsights: true
+        }
+      });
+
+      if (!messageForPusher) {
+        throw new Error("Message not found after creation");
+      }
+
+      console.log("Triggering Pusher event for message:", messageForPusher.id);
+      
+      // Trigger the message:new event on the conversation channel
+      const channelName = `presence-conversation-${numericConversationId}`;
+      console.log("Using channel name:", channelName);
+      await pusherServer.trigger(channelName, "messages:new", messageForPusher);
+
+      // Update the conversation's last message time
+      const updatedConversation = await prisma.conversation.findUnique({
         where: {
-          id: parsedConversationId,
-        },
-        data: {
-          lastMessageAt: new Date(),
+          id: numericConversationId
         },
         include: {
           users: {
@@ -80,54 +161,37 @@ export async function POST(req: Request) {
                   user: true
                 }
               },
-              sender: true
+              sender: true,
+              mentalHealthInsights: true
             },
             orderBy: {
               createdAt: 'desc'
             },
             take: 1
-          },
-        },
-      });
-
-      // Trigger Pusher events with safety checks and error handling
-      try {
-        // For conversation channel
-        if (conversationId) {
-          await pusherServer.trigger(conversationId.toString(), "messages:new", newMessage);
-        }
-
-        // For individual user channels
-        if (updatedConversation.users && updatedConversation.users.length > 0 && 
-            updatedConversation.messages && updatedConversation.messages.length > 0) {
-          
-          // Get the last message
-          const lastMessage = updatedConversation.messages[0];
-          
-          // For each user, trigger a conversation update
-          for (const userConversation of updatedConversation.users) {
-            const userEmail = userConversation.user?.email;
-            
-            if (userEmail) {
-              await pusherServer.trigger(userEmail, "conversation:update", {
-                id: updatedConversation.id,
-                messages: [lastMessage],
-              });
-            }
           }
         }
-      } catch (error) {
-        console.error("PUSHER_ERROR", error);
-        // Continue execution even if Pusher fails
-      }
+      });
 
-      return NextResponse.json(newMessage);
-    } catch (dbError) {
-      console.error("[DATABASE_ERROR]", dbError);
-      return new NextResponse("Database Error", { status: 500 });
+      if (updatedConversation?.users) {
+        for (const userConversation of updatedConversation.users) {
+          const userEmail = userConversation.user?.email;
+          if (userEmail) {
+            await pusherServer.trigger(userEmail, "conversation:update", {
+              id: numericConversationId,
+              messages: updatedConversation.messages
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("PUSHER_ERROR", error);
+      // Don't throw the error, just log it and continue
+      // The message is still created in the database
     }
+
+    return NextResponse.json(result);
   } catch (error) {
-    console.log("[MESSAGES_ERROR]", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    console.error("ERROR_MESSAGES", error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }

@@ -1,8 +1,20 @@
 import { Conversation, Message, User, UserConversation } from "@prisma/client";
 
+export interface MentalHealthInsight {
+  id: number;
+  messageId: number;
+  sentimentScore: number;
+  emotionalState: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  keywords: string | null;
+  recommendations: string | null;
+  createdAt: Date;
+}
+
 export type FullMessageType = Message & {
   sender: User;
   seenBy: { user: User }[];
+  mentalHealthInsights?: MentalHealthInsight[];
 };
 
 // For MySQL with junction tables
