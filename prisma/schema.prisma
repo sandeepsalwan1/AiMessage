@@ -56,6 +56,7 @@ model Conversation {
   // Relationships
   messages      Message[]
   users         UserConversation[]
+  sentiment     ConversationSentiment?
 }
 
 // Junction table for User-Conversation many-to-many relationship
@@ -70,19 +71,16 @@ model UserConversation {
 }
 
 model Message {
-  id            Int      @id @default(autoincrement())
-  body          String?  @db.Text
-  image         String?
-  createdAt     DateTime @default(now())
-  
-  // Foreign keys
+  id             Int      @id @default(autoincrement())
+  body           String?  @db.Text
+  image          String?
+  createdAt      DateTime @default(now())
   conversationId Int
   senderId       Int
-
-  // Relationships
-  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User             @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
   seenBy         UserSeenMessage[]
+  mentalHealthInsights MentalHealthInsight[]
 }
 
 // Junction table for Message-User seen relationship
@@ -94,6 +92,31 @@ model UserSeenMessage {
   message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   
   @@id([userId, messageId])
+}
+
+model MentalHealthInsight {
+  id              Int      @id @default(autoincrement())
+  messageId       Int
+  message         Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  sentimentScore  Float
+  emotionalState  String
+  riskLevel       String   @default("LOW") // LOW, MEDIUM, HIGH
+  keywords        String?  @db.Text
+  createdAt       DateTime @default(now())
+  recommendations String?  @db.Text
+}
+
+model ConversationSentiment {
+  id              Int      @id @default(autoincrement())
+  conversationId  Int      @unique
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sentimentScore  Float
+  emotionalState  String
+  riskLevel       String   @default("LOW")
+  keywords        String?  @db.Text
+  recommendations String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 

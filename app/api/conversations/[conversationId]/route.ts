@@ -119,9 +119,11 @@ export async function GET(
               include: {
                 user: true
               }
-            }
+            },
+            mentalHealthInsights: true
           }
         },
+        sentiment: true
       },
     });
 
@@ -131,7 +133,7 @@ export async function GET(
 
     // Check if current user is part of the conversation
     const isUserInConversation = conversation.users.some(
-      userConv => userConv.userId === currentUser.id
+      (userConv: { userId: number }) => userConv.userId === currentUser.id
     );
 
     if (!isUserInConversation) {

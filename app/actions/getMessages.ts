@@ -17,6 +17,7 @@ const getMessages = async (conversationId: string) => {
             user: true
           }
         },
+        mentalHealthInsights: true
       },
     });
 

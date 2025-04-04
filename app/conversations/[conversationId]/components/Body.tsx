@@ -1,70 +1,86 @@
 "use client";
 
-import useConversation from "@/app/hooks/useConversation";
+import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import { pusherClient } from "@/app/libs/pusher";
+import { find } from "lodash";
+import MessageBox from "./MessageBox";
 import { FullMessageType } from "@/app/types";
 import axios from "axios";
-import { find } from "lodash";
-import { FC, useEffect, useRef, useState } from "react";
-import MessageBox from "./MessageBox";
 
 interface BodyProps {
   initialMessages: FullMessageType[];
+  conversationId: string;
 }
 
-const Body: FC<BodyProps> = ({ initialMessages }) => {
-  const [messages, setMessages] = useState(initialMessages);
+const Body: React.FC<BodyProps> = ({ initialMessages, conversationId }) => {
+  const [messages, setMessages] = useState<FullMessageType[]>(initialMessages);
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  const { conversationId } = useConversation();
+  const { data: session } = useSession();
 
   useEffect(() => {
     axios.post(`/api/conversations/${conversationId}/seen`);
   }, [conversationId]);
 
   useEffect(() => {
-    pusherClient.subscribe(conversationId);
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!conversationId || !pusherClient) {
+      return;
+    }
+
+    const channel = pusherClient.subscribe(`presence-conversation-${conversationId}`);
 
     const messageHandler = (message: FullMessageType) => {
       axios.post(`/api/conversations/${conversationId}/seen`);
-      setMessages((messages) => {
-        if (find(messages, { id: message.id })) {
-          return messages;
+
+      setMessages((current) => {
+        if (find(current, { id: message.id })) {
+          return current;
         }
-
-        return [...messages, message];
+        return [...current, message];
       });
-
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    const updateMessageHandler = (message: FullMessageType) => {
+    const updateMessageHandler = (newMessage: FullMessageType) => {
       setMessages((current) =>
-        current.map((m) => {
-          if (m.id === message.id) {
-            return message;
+        current.map((currentMessage) => {
+          if (currentMessage.id === newMessage.id) {
+            return newMessage;
           }
-
-          return m;
+          return currentMessage;
         })
       );
     };
 
-    pusherClient.bind("messages:new", messageHandler);
-    pusherClient.bind("message:update", updateMessageHandler);
+    const conversationUpdateHandler = (data: { id: string; lastMessageAt: Date; sentiment: any }) => {
+      // No need to update messages with sentiment as it's handled at the page level
+    };
+
+    channel.bind("messages:new", messageHandler);
+    channel.bind("message:update", updateMessageHandler);
+    channel.bind("conversation:update", conversationUpdateHandler);
 
     return () => {
-      pusherClient.unsubscribe(conversationId);
-      pusherClient.unbind("messages:new", messageHandler);
-      pusherClient.unbind("message:update", updateMessageHandler);
+      channel.unbind("messages:new", messageHandler);
+      channel.unbind("message:update", updateMessageHandler);
+      channel.unbind("conversation:update", conversationUpdateHandler);
+      if (pusherClient) {
+        pusherClient.unsubscribe(`presence-conversation-${conversationId}`);
+      }
     };
   }, [conversationId]);
 
+  useEffect(() => {
+    bottomRef?.current?.scrollIntoView();
+  }, [messages]);
+
   return (
     <div className="flex-1 overflow-y-auto">
-      {messages.map((message, index) => (
-        <MessageBox isLast={index === messages.length - 1} key={message.id} message={message} />
+      {messages.map((message, i) => (
+        <MessageBox
+          isLast={i === messages.length - 1}
+          key={message.id}
+          message={message}
+        />
       ))}
       <div ref={bottomRef} className="pt-24" />
     </div>

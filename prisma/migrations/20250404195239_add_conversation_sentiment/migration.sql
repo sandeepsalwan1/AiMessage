@@ -71,6 +71,36 @@ CREATE TABLE `UserSeenMessage` (
     PRIMARY KEY (`userId`, `messageId`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `MentalHealthInsight` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `messageId` INTEGER NOT NULL,
+    `sentimentScore` DOUBLE NOT NULL,
+    `emotionalState` VARCHAR(191) NOT NULL,
+    `riskLevel` VARCHAR(191) NOT NULL DEFAULT 'LOW',
+    `keywords` TEXT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `recommendations` TEXT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `ConversationSentiment` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `conversationId` INTEGER NOT NULL,
+    `sentimentScore` DOUBLE NOT NULL,
+    `emotionalState` VARCHAR(191) NOT NULL,
+    `riskLevel` VARCHAR(191) NOT NULL DEFAULT 'LOW',
+    `keywords` TEXT NULL,
+    `recommendations` TEXT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `ConversationSentiment_conversationId_key`(`conversationId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `Account` ADD CONSTRAINT `Account_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -91,3 +121,9 @@ ALTER TABLE `UserSeenMessage` ADD CONSTRAINT `UserSeenMessage_userId_fkey` FOREI
 
 -- AddForeignKey
 ALTER TABLE `UserSeenMessage` ADD CONSTRAINT `UserSeenMessage_messageId_fkey` FOREIGN KEY (`messageId`) REFERENCES `Message`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `MentalHealthInsight` ADD CONSTRAINT `MentalHealthInsight_messageId_fkey` FOREIGN KEY (`messageId`) REFERENCES `Message`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ConversationSentiment` ADD CONSTRAINT `ConversationSentiment_conversationId_fkey` FOREIGN KEY (`conversationId`) REFERENCES `Conversation`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
