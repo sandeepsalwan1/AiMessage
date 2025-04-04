@@ -7,7 +7,7 @@ if (process.env.NODE_ENV === 'development') {
   console.log('[PUSHER ENV CHECK]', {
     appId: process.env.NEXT_PUBLIC_PUSHER_APP_ID ? 'defined' : 'undefined',
     key: process.env.NEXT_PUBLIC_PUSHER_APP_KEY ? 'defined' : 'undefined',
-    secret: process.env.PUSHER_SECRET ? 'defined' : 'undefined',
+    secret: process.env.NEXT_PUBLIC_PUSHER_SECRET ? 'defined' : 'undefined',
     cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER ? 'defined' : 'undefined',
     clusterValue: process.env.NEXT_PUBLIC_PUSHER_CLUSTER
   });
@@ -36,10 +36,10 @@ class MockPusherServer {
 export const pusherServer = isBuildTime() 
   ? new MockPusherServer() as unknown as PusherServer
   : new PusherServer({
-      appId: process.env.PUSHER_APP_ID || defaultAppId,
-      key: process.env.PUSHER_APP_KEY || defaultAppKey,
-      secret: process.env.PUSHER_SECRET || defaultSecret,
-      cluster: process.env.PUSHER_CLUSTER || defaultCluster,
+      appId: process.env.NEXT_PUBLIC_PUSHER_APP_ID || defaultAppId,
+      key: process.env.NEXT_PUBLIC_PUSHER_APP_KEY || defaultAppKey,
+      secret: process.env.NEXT_PUBLIC_PUSHER_SECRET || defaultSecret,
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || defaultCluster,
       useTLS: true,
     });
 

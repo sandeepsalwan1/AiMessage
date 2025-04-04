@@ -2,74 +2,72 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Message, User } from "@prisma/client";
 import { pusherClient } from "@/app/libs/pusher";
 import { find } from "lodash";
 import MessageBox from "./MessageBox";
 import { FullMessageType } from "@/app/types";
-
-interface MentalHealthInsight {
-  id: number;
-  messageId: number;
-  sentimentScore: number;
-  emotionalState: string;
-  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  keywords: string | null;
-  recommendations: string | null;
-  createdAt: Date;
-}
-
-interface ExtendedMessageType extends FullMessageType {
-  mentalHealthInsights?: MentalHealthInsight[];
-}
+import axios from "axios";
 
 interface BodyProps {
-  initialMessages: ExtendedMessageType[];
+  initialMessages: FullMessageType[];
   conversationId: string;
 }
 
 const Body: React.FC<BodyProps> = ({ initialMessages, conversationId }) => {
-  const [messages, setMessages] = useState<ExtendedMessageType[]>(initialMessages);
+  const [messages, setMessages] = useState<FullMessageType[]>(initialMessages);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { data: session } = useSession();
 
   useEffect(() => {
-    if (!pusherClient) {
-      console.error("Pusher client is not initialized");
+    axios.post(`/api/conversations/${conversationId}/seen`);
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!conversationId || !pusherClient) {
       return;
     }
 
-    console.log("Subscribing to channel:", `presence-conversation-${conversationId}`);
     const channel = pusherClient.subscribe(`presence-conversation-${conversationId}`);
 
-    const messageHandler = (message: ExtendedMessageType) => {
-      console.log("Received message:", message);
-      
-      if (find(messages, { id: message.id })) {
-        console.log("Message already exists, skipping");
-        return;
-      }
+    const messageHandler = (message: FullMessageType) => {
+      axios.post(`/api/conversations/${conversationId}/seen`);
 
-      console.log("Adding new message to state");
-      setMessages((current) => [...current, message]);
-
-      // Check for mental health insights
-      if (message.mentalHealthInsights && message.mentalHealthInsights.length > 0) {
-        console.log("Mental health insights found:", message.mentalHealthInsights);
-      }
+      setMessages((current) => {
+        if (find(current, { id: message.id })) {
+          return current;
+        }
+        return [...current, message];
+      });
     };
 
-    // Bind to the channel's messages:new event
+    const updateMessageHandler = (newMessage: FullMessageType) => {
+      setMessages((current) =>
+        current.map((currentMessage) => {
+          if (currentMessage.id === newMessage.id) {
+            return newMessage;
+          }
+          return currentMessage;
+        })
+      );
+    };
+
+    const conversationUpdateHandler = (data: { id: string; lastMessageAt: Date; sentiment: any }) => {
+      // No need to update messages with sentiment as it's handled at the page level
+    };
+
     channel.bind("messages:new", messageHandler);
+    channel.bind("message:update", updateMessageHandler);
+    channel.bind("conversation:update", conversationUpdateHandler);
 
     return () => {
-      console.log("Unsubscribing from channel:", `presence-conversation-${conversationId}`);
+      channel.unbind("messages:new", messageHandler);
+      channel.unbind("message:update", updateMessageHandler);
+      channel.unbind("conversation:update", conversationUpdateHandler);
       if (pusherClient) {
-        channel.unbind("messages:new", messageHandler);
         pusherClient.unsubscribe(`presence-conversation-${conversationId}`);
       }
     };
-  }, [conversationId, messages]);
+  }, [conversationId]);
 
   useEffect(() => {
     bottomRef?.current?.scrollIntoView();
@@ -77,15 +75,14 @@ const Body: React.FC<BodyProps> = ({ initialMessages, conversationId }) => {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {messages.map((message) => (
-        <div key={message.id}>
-          <MessageBox
-            message={message}
-            isLast={messages.indexOf(message) === messages.length - 1}
-          />
-        </div>
+      {messages.map((message, i) => (
+        <MessageBox
+          isLast={i === messages.length - 1}
+          key={message.id}
+          message={message}
+        />
       ))}
-      <div ref={bottomRef} />
+      <div ref={bottomRef} className="pt-24" />
     </div>
   );
 };

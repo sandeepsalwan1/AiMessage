@@ -1,9 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { isBuildTime } from "./db-build-helper";
 
-declare global {
-  var prisma: PrismaClient | undefined;
-}
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
 // During build time, create a more comprehensive mock client
 class MockPrismaClient {
@@ -12,12 +12,12 @@ class MockPrismaClient {
     return new Proxy({}, {
       get: (target, prop) => {
         // Handle common Prisma model access (user, conversation, etc.)
-        if (['user', 'conversation', 'message', 'account', 'userConversation', 'userSeenMessage'].includes(prop as string)) {
+        if (['user', 'conversation', 'message', 'account', 'userConversation', 'userSeenMessage', 'mentalHealthInsight', 'conversationSentiment'].includes(prop as string)) {
           // Return a model proxy that handles CRUD operations
           return new Proxy({}, {
             get: (modelTarget, operation) => {
               // Handle common CRUD operations and return empty results
-              if (['findUnique', 'findFirst', 'findMany', 'create', 'update', 'delete', 'count'].includes(operation as string)) {
+              if (['findUnique', 'findFirst', 'findMany', 'create', 'update', 'delete', 'count', 'upsert'].includes(operation as string)) {
                 return (...args: any[]) => {
                   console.warn(`Mock PrismaClient: ${String(prop)}.${String(operation)} called during build`);
                   
@@ -26,7 +26,7 @@ class MockPrismaClient {
                     return Promise.resolve([]);
                   } else if (operation === 'count') {
                     return Promise.resolve(0); 
-                  } else if (['findUnique', 'findFirst', 'create', 'update'].includes(operation as string)) {
+                  } else if (['findUnique', 'findFirst', 'create', 'update', 'upsert'].includes(operation as string)) {
                     return Promise.resolve(null);
                   } else {
                     return Promise.resolve(null);
@@ -82,12 +82,10 @@ const createClient = () => {
 };
 
 // Create the appropriate client based on environment
-const client = globalThis.prisma || createClient();
+const prisma = globalForPrisma.prisma ?? createClient();
 
 // Save client to global object in development to prevent multiple instances
-if (process.env.NODE_ENV !== "production") {
-  globalThis.prisma = client;
-}
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-export default client;
+export default prisma;
 

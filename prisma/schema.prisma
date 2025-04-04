@@ -56,6 +56,7 @@ model Conversation {
   // Relationships
   messages      Message[]
   users         UserConversation[]
+  sentiment     ConversationSentiment?
 }
 
 // Junction table for User-Conversation many-to-many relationship
@@ -103,6 +104,19 @@ model MentalHealthInsight {
   keywords        String?  @db.Text
   createdAt       DateTime @default(now())
   recommendations String?  @db.Text
+}
+
+model ConversationSentiment {
+  id              Int      @id @default(autoincrement())
+  conversationId  Int      @unique
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sentimentScore  Float
+  emotionalState  String
+  riskLevel       String   @default("LOW")
+  keywords        String?  @db.Text
+  recommendations String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 

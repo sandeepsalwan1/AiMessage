@@ -116,9 +116,10 @@ const Form = () => {
       <CldUploadButton
         options={{
           maxFiles: 1,
+          sources: ['local', 'camera'],
         }}
         onUpload={handleUpload}
-        uploadPreset="weopayd7"
+        uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
       >
         <HiPhoto size={30} className="text-sky-500" />
       </CldUploadButton>

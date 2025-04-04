@@ -21,6 +21,7 @@ const Avatar: FC<AvatarProps> = ({ user }) => {
 					alt="Avatar"
 					src={user?.image || "/images/placeholder.jpg"}
 					fill
+					sizes="(max-width: 768px) 36px, 44px"
 				/>
 			</div>
 			{isActive && (

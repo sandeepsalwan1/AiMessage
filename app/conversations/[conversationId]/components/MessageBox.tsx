@@ -6,9 +6,9 @@ import clsx from "clsx";
 import { format } from "date-fns";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import { FC, useMemo, useState } from "react";
+import { FC, useEffect, useMemo, useState } from "react";
 import ImageModal from "./ImageModal";
-import { FiSmile, FiFrown, FiMeh, FiInfo } from "react-icons/fi";
+import { RiEmotionHappyLine, RiEmotionUnhappyLine, RiEmotionNormalLine } from "react-icons/ri";
 
 interface MessageBoxProps {
 	isLast: boolean;
@@ -18,7 +18,6 @@ interface MessageBoxProps {
 const MessageBox: FC<MessageBoxProps> = ({ isLast, message }) => {
 	const session = useSession();
 	const [imageModalOpen, setImageModalOpen] = useState(false);
-	const [showSentimentInfo, setShowSentimentInfo] = useState(false);
 
 	const isOwn = session?.data?.user?.email === message?.sender?.email;
 	
@@ -50,42 +49,57 @@ const MessageBox: FC<MessageBoxProps> = ({ isLast, message }) => {
 
 	// Get sentiment information
 	const sentimentInfo = useMemo(() => {
-		if (!message.mentalHealthInsights || message.mentalHealthInsights.length === 0) {
+		// Detailed debug logging
+		console.log("Full message object:", JSON.stringify(message, null, 2));
+		console.log("Mental health insights:", JSON.stringify(message?.mentalHealthInsights, null, 2));
+
+		if (!message?.mentalHealthInsights?.[0]) {
+			console.log("No mental health insights available for message");
 			return null;
 		}
 		
 		const insight = message.mentalHealthInsights[0];
+		console.log("Using insight for message:", JSON.stringify(insight, null, 2));
+
 		return {
-			score: insight.sentimentScore,
-			emotionalState: insight.emotionalState,
-			riskLevel: insight.riskLevel,
-			recommendations: insight.recommendations?.split('\n') || []
+			score: insight.sentimentScore || 0,
+			emotionalState: insight.emotionalState || 'NEUTRAL'
 		};
-	}, [message.mentalHealthInsights]);
+	}, [message?.mentalHealthInsights]);
 
 	const container = clsx("flex gap-3 p-4", isOwn && "justify-end");
 	const avatar = clsx(isOwn && "order-2");
 	const body = clsx("flex flex-col gap-2", isOwn && "items-end");
 
 	const messageContainer = clsx(
-		"text-sm w-fit overflow-hidden",
+		"text-sm w-fit overflow-hidden relative",
 		isOwn ? "text-white bg-sky-500" : "bg-gray-100",
 		message?.image ? "rounded-md p-0" : "rounded-full py-2 px-3"
 	);
 
-	// Get sentiment icon based on emotional state
+	// Get sentiment icon
 	const getSentimentIcon = () => {
-		if (!sentimentInfo) return null;
+		if (!sentimentInfo) {
+			console.log("No sentiment info available for icon");
+			return null;
+		}
+		
+		console.log("Getting sentiment icon for state:", sentimentInfo.emotionalState);
 		
 		switch (sentimentInfo.emotionalState) {
 			case 'POSITIVE':
-				return <FiSmile className="h-4 w-4 text-green-500" />;
+				return <RiEmotionHappyLine className="h-4 w-4 text-green-500" />;
 			case 'NEGATIVE':
-				return <FiFrown className="h-4 w-4 text-red-500" />;
+				return <RiEmotionUnhappyLine className="h-4 w-4 text-red-500" />;
 			default:
-				return <FiMeh className="h-4 w-4 text-yellow-500" />;
+				return <RiEmotionNormalLine className="h-4 w-4 text-yellow-500" />;
 		}
 	};
+
+	// Debug log when sentiment changes
+	useEffect(() => {
+		console.log("Current message sentiment:", JSON.stringify(sentimentInfo, null, 2));
+	}, [sentimentInfo]);
 
 	return (
 		<div className={container}>
@@ -98,6 +112,11 @@ const MessageBox: FC<MessageBoxProps> = ({ isLast, message }) => {
 					<div className="text-xs text-gray-400">
 						{format(new Date(message?.createdAt), "p")}
 					</div>
+					{sentimentInfo && (
+						<div className="ml-1">
+							{getSentimentIcon()}
+						</div>
+					)}
 				</div>
 				<div className={messageContainer}>
 					<ImageModal
@@ -120,31 +139,6 @@ const MessageBox: FC<MessageBoxProps> = ({ isLast, message }) => {
 				</div>
 				{isLast && isOwn && seenList && (
 					<div className="text-xs font-light text-gray-500">{`Seen by ${seenList}`}</div>
-				)}
-				{sentimentInfo && (
-					<div className="flex flex-col mt-1">
-						<div className="flex items-center gap-1 text-xs text-gray-500">
-							{getSentimentIcon()}
-							<span>
-								{sentimentInfo.emotionalState} ({sentimentInfo.score > 0 ? '+' : ''}{sentimentInfo.score})
-							</span>
-							<button 
-								onClick={() => setShowSentimentInfo(!showSentimentInfo)}
-								className="ml-1 text-gray-500 hover:text-gray-700"
-							>
-								<FiInfo className="h-3 w-3" />
-							</button>
-						</div>
-						{showSentimentInfo && sentimentInfo.recommendations.length > 0 && (
-							<div className="mt-1 text-xs text-gray-600 bg-gray-100 p-2 rounded">
-								<ul className="list-disc pl-4 space-y-1">
-									{sentimentInfo.recommendations.map((rec, index) => (
-										<li key={index}>{rec}</li>
-									))}
-								</ul>
-							</div>
-						)}
-					</div>
 				)}
 			</div>
 		</div>
