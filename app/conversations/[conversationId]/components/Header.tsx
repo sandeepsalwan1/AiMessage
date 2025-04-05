@@ -50,12 +50,10 @@ const Header: FC<HeaderProps> = ({ conversation }) => {
 	// Get sentiment information from the conversation
 	const getSentimentInfo = (): SentimentDisplayInfo | null => {
 		if (!conversation.sentiment) {
-			console.log("No conversation sentiment found");
 			return null;
 		}
 
 		const sentiment = conversation.sentiment;
-		console.log("Using conversation sentiment for header:", sentiment);
 
 		let icon;
 		let color;
@@ -93,7 +91,6 @@ const Header: FC<HeaderProps> = ({ conversation }) => {
 	};
 
 	const sentimentInfo = getSentimentInfo();
-	console.log("Header sentiment info:", sentimentInfo);
 
 	return (
 		<>
@@ -139,7 +136,7 @@ const Header: FC<HeaderProps> = ({ conversation }) => {
 								<div className="flex items-center justify-between">
 									<span className="font-medium">{sentimentInfo.text}</span>
 									<span className="text-sm font-medium">
-										Score: {sentimentInfo.score > 0 ? '+' : ''}{sentimentInfo.score}
+										Score: {sentimentInfo.score}/100
 									</span>
 								</div>
 								<p className="text-sm opacity-90 mt-0.5">

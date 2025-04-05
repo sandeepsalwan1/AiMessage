@@ -37,7 +37,6 @@ const ConversationId = ({ params }: { params: IParams }) => {
 
 	useEffect(() => {
 		if (!params.conversationId || !pusherClient) {
-			console.error("Pusher client is not initialized or conversationId is missing");
 			return;
 		}
 
