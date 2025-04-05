@@ -35,37 +35,13 @@ const Form = () => {
     setIsSubmitting(true);
     setValue("message", "", { shouldValidate: true });
 
-    // Log the request being sent (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[SENDING MESSAGE]', { data, conversationId });
-    }
-
     axios.post("/api/messages", {
       ...data,
       conversationId,
     })
-    .then(response => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[MESSAGE SENT]', response.data);
-      }
-    })
     .catch((error) => {
       console.error('Error sending message:', error.response?.data || error.message || error);
       toast.error('Failed to send message. Please try again.');
-      
-      // Detailed error logging
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Error response:', {
-          data: error.response.data,
-          status: error.response.status,
-          headers: error.response.headers
-        });
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('Error request:', error.request);
-      }
     })
     .finally(() => {
       setIsSubmitting(false);
@@ -77,34 +53,13 @@ const Form = () => {
     
     setIsSubmitting(true);
     
-    // Log the upload request (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[UPLOADING IMAGE]', { result: result?.info, conversationId });
-    }
-    
     axios.post("/api/messages", {
       image: result?.info?.secure_url,
       conversationId,
     })
-    .then(response => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[IMAGE SENT]', response.data);
-      }
-    })
     .catch((error) => {
       console.error('Error uploading image:', error.response?.data || error.message || error);
       toast.error('Failed to upload image. Please try again.');
-      
-      // Detailed error logging
-      if (error.response) {
-        console.error('Error response:', {
-          data: error.response.data,
-          status: error.response.status,
-          headers: error.response.headers
-        });
-      } else if (error.request) {
-        console.error('Error request:', error.request);
-      }
     })
     .finally(() => {
       setIsSubmitting(false);

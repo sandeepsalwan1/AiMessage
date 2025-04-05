@@ -49,17 +49,11 @@ const MessageBox: FC<MessageBoxProps> = ({ isLast, message }) => {
 
 	// Get sentiment information
 	const sentimentInfo = useMemo(() => {
-		// Detailed debug logging
-		console.log("Full message object:", JSON.stringify(message, null, 2));
-		console.log("Mental health insights:", JSON.stringify(message?.mentalHealthInsights, null, 2));
-
 		if (!message?.mentalHealthInsights?.[0]) {
-			console.log("No mental health insights available for message");
 			return null;
 		}
 		
 		const insight = message.mentalHealthInsights[0];
-		console.log("Using insight for message:", JSON.stringify(insight, null, 2));
 
 		return {
 			score: insight.sentimentScore || 0,
@@ -80,11 +74,8 @@ const MessageBox: FC<MessageBoxProps> = ({ isLast, message }) => {
 	// Get sentiment icon
 	const getSentimentIcon = () => {
 		if (!sentimentInfo) {
-			console.log("No sentiment info available for icon");
 			return null;
 		}
-		
-		console.log("Getting sentiment icon for state:", sentimentInfo.emotionalState);
 		
 		switch (sentimentInfo.emotionalState) {
 			case 'POSITIVE':
@@ -95,11 +86,6 @@ const MessageBox: FC<MessageBoxProps> = ({ isLast, message }) => {
 				return <RiEmotionNormalLine className="h-4 w-4 text-yellow-500" />;
 		}
 	};
-
-	// Debug log when sentiment changes
-	useEffect(() => {
-		console.log("Current message sentiment:", JSON.stringify(sentimentInfo, null, 2));
-	}, [sentimentInfo]);
 
 	return (
 		<div className={container}>

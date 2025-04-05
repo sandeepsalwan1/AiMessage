@@ -44,6 +44,17 @@ export interface MentalHealthAnalysis {
   recommendations: string[];
 }
 
+// Helper function to convert sentiment score to percentage (0-100)
+const convertToPercentage = (score: number): number => {
+  // Sentiment scores typically range from -5 to 5
+  // Convert to 0-100 scale where:
+  // -5 = 0%
+  // 0 = 50%
+  // 5 = 100%
+  const percentage = ((score + 5) / 10) * 100;
+  return Math.round(Math.max(0, Math.min(100, percentage))); // Ensure between 0-100
+};
+
 // Helper function to round to 0.1 digits
 const roundToOneDecimal = (num: number): number => {
   return Math.round(num * 10) / 10;
@@ -52,7 +63,8 @@ const roundToOneDecimal = (num: number): number => {
 export function analyzeMentalHealth(message: string): MentalHealthAnalysis {
   // Perform sentiment analysis
   const sentimentResult = sentiment.analyze(message);
-  const sentimentScore = roundToOneDecimal(sentimentResult.score);
+  const rawScore = roundToOneDecimal(sentimentResult.score);
+  const sentimentScore = convertToPercentage(rawScore);
   
   // Find matching keywords
   const foundKeywords: string[] = [];
@@ -79,11 +91,11 @@ export function analyzeMentalHealth(message: string): MentalHealthAnalysis {
 
   // Determine emotional state based on sentiment score
   let emotionalState = 'NEUTRAL';
-  if (sentimentScore > 1) emotionalState = 'POSITIVE';
-  else if (sentimentScore < -1) emotionalState = 'NEGATIVE';
+  if (sentimentScore > 65) emotionalState = 'POSITIVE';
+  else if (sentimentScore < 35) emotionalState = 'NEGATIVE';
 
   // Adjust risk level based on sentiment score and emotional state
-  if (riskLevel === MEDIUM && sentimentScore > 0) {
+  if (riskLevel === MEDIUM && sentimentScore > 50) {
     riskLevel = LOW;
   }
 
@@ -101,18 +113,19 @@ export function analyzeMentalHealth(message: string): MentalHealthAnalysis {
 
 export function shouldTriggerAlert(analysis: MentalHealthAnalysis): boolean {
   return analysis.riskLevel === HIGH || 
-         (analysis.riskLevel === MEDIUM && analysis.sentimentScore < -2);
+         (analysis.riskLevel === MEDIUM && analysis.sentimentScore < 20);
 }
 
 export function analyzeConversationSentiment(messages: { mentalHealthInsights: MentalHealthInsight[] }[]): MentalHealthAnalysis {
   // Calculate average sentiment score
   const totalScore = messages.reduce((sum, msg) => {
     if (msg.mentalHealthInsights && msg.mentalHealthInsights.length > 0) {
+      // The scores are already in 0-100 scale, no need to convert
       return sum + msg.mentalHealthInsights[0].sentimentScore;
     }
     return sum;
   }, 0);
-  const averageScore = roundToOneDecimal(messages.length > 0 ? totalScore / messages.length : 0);
+  const averageScore = Math.round(messages.length > 0 ? totalScore / messages.length : 50);
 
   // Collect all keywords and recommendations
   const allKeywords = new Set<string>();
@@ -134,11 +147,11 @@ export function analyzeConversationSentiment(messages: { mentalHealthInsights: M
 
   // Determine emotional state based on average score
   let emotionalState = 'NEUTRAL';
-  if (averageScore > 1) emotionalState = 'POSITIVE';
-  else if (averageScore < -1) emotionalState = 'NEGATIVE';
+  if (averageScore > 65) emotionalState = 'POSITIVE';
+  else if (averageScore < 35) emotionalState = 'NEGATIVE';
 
   // Adjust risk level based on average sentiment score
-  if (highestRiskLevel === MEDIUM && averageScore > 0) {
+  if (highestRiskLevel === MEDIUM && averageScore > 50) {
     highestRiskLevel = LOW;
   }
 
