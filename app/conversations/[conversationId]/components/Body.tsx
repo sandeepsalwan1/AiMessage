@@ -27,8 +27,11 @@ const Body: FC<BodyProps> = ({ initialMessages }) => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
     const messageHandler = (message: FullMessageType) => {
+      console.log('[PUSHER-Body] Received messages:new', message.id);
       axios.post(`/api/conversations/${conversationId}/seen`);
+      
       setMessages((messages) => {
+        // Check if we already have this message
         if (find(messages, { id: message.id })) {
           return messages;
         }
@@ -40,6 +43,7 @@ const Body: FC<BodyProps> = ({ initialMessages }) => {
     };
 
     const updateMessageHandler = (message: FullMessageType) => {
+      console.log('[PUSHER-Body] Received message:update', message.id);
       setMessages((current) =>
         current.map((m) => {
           if (m.id === message.id) {
@@ -51,10 +55,14 @@ const Body: FC<BodyProps> = ({ initialMessages }) => {
       );
     };
 
+    // Debug the subscription
+    console.log('[PUSHER-Body] Subscribing to channel:', conversationId);
+    
     pusherClient.bind("messages:new", messageHandler);
     pusherClient.bind("message:update", updateMessageHandler);
 
     return () => {
+      console.log('[PUSHER-Body] Unsubscribing from channel:', conversationId);
       pusherClient.unsubscribe(conversationId);
       pusherClient.unbind("messages:new", messageHandler);
       pusherClient.unbind("message:update", updateMessageHandler);

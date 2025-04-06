@@ -48,6 +48,14 @@ const Form = () => {
       if (process.env.NODE_ENV === 'development') {
         console.log('[MESSAGE SENT]', response.data);
       }
+      
+      // Force a router refresh to ensure UI updates properly
+      // This ensures the message appears in the conversations list without a manual refresh
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('message:sent', { 
+          detail: { message: response.data, conversationId } 
+        }));
+      }, 300);
     })
     .catch((error) => {
       console.error('Error sending message:', error.response?.data || error.message || error);
