@@ -1820,7 +1820,7 @@ index 50337e2..9b3734c 100644
 +        "type": "github",
 +        "url": "https://github.com/sponsors/wooorm"
 +      }
-+    },
++    }, 
      "node_modules/agent-base": {
        "version": "6.0.2",
        "resolved": "https://registry.npmjs.org/agent-base/-/agent-base-6.0.2.tgz",
