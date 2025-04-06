@@ -3,7 +3,7 @@
 <div align="center">
   <img src="https://github.com/ayusshrathore/messenger-clone/raw/main/public/images/logo.png" height="50" width="50" />
 </div>
-
+ 
 ## Introduction
 
 Welcome to Messenger Clone! This is a full-stack web application built using Next.js, Prisma, Tailwind CSS, MongoDB, Pusher, and TypeScript. The project aims to provide a real-time messaging experience similar to popular messaging platforms. It enables users to send and receive messages in real-time, view their conversation history, and interact with other users seamlessly.

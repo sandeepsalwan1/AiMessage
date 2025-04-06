@@ -1,4 +1,13 @@
 # dependencies
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.development.local
+.env.production.local
+.env.test.local
+
 /node_modules
 /.pnp
 .pnp.js

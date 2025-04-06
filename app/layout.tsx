@@ -9,8 +9,14 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Messenger Clone",
-  description: "Messenger Clone",
+  title: "AiMessage",
+  description: "AiMessage",
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/images/logo.png' }
+    ],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
