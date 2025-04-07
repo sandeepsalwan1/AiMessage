@@ -2,7 +2,7 @@
 
 ## Overview
 
-AiMessage is a full-stack messaging application that combines real-time communication with AI capabilities. Built with modern web technologies, it demonstrates expertise in database design, real-time data management, and scalable architecture.
+AiMessage is a full-stack messaging application that combines real-time communication with mental health awareness features. Built with modern web technologies, it demonstrates expertise in database design, real-time data management, and scalable architecture.
 
 ## Screenshots
 
@@ -29,7 +29,7 @@ AiMessage is a full-stack messaging application that combines real-time communic
 - **User Management**: Secure authentication and profile management
 - **Conversation Management**: Support for one-on-one and group conversations
 - **Message History**: Efficient storage and retrieval of conversation history
-- **AI Integration**: Built-in support for AI-powered features
+- **Mental Health Analysis**: Real-time sentiment analysis and emotional state detection
 - **Responsive Design**: Fully responsive interface for all devices
 
 ## Technical Implementation
@@ -38,14 +38,15 @@ AiMessage is a full-stack messaging application that combines real-time communic
 - Designed and implemented a scalable MySQL database schema
 - Optimized for real-time message delivery and status updates
 - Implemented efficient query patterns for message threading and conversation history
-- Created tables for Users, Conversations, Messages, Participants, and AI Interactions
+- Created tables for Users, Conversations, Messages, Participants, and Mental Health Insights
 
-### Complex Query Support
-- Message threading and conversation history
-- User activity tracking and analysis
-- Message delivery status monitoring
-- AI interaction pattern analysis
-- User engagement metrics
+### Mental Health Analysis Features
+- Real-time sentiment analysis of messages
+- Emotional state detection (Positive, Negative, Neutral)
+- Risk level assessment for mental health concerns
+- Keyword detection for mental health-related terms
+- Automated recommendations based on conversation sentiment
+- Conversation-level sentiment tracking
 
 ## Technical Stack
 
@@ -55,12 +56,13 @@ AiMessage is a full-stack messaging application that combines real-time communic
 - **Real-time**: Pusher
 - **Authentication**: NextAuth.js
 - **State Management**: Zustand
+- **AI/NLP**: Natural, Sentiment.js
 
 ## Project Highlights
 
 - Designed and implemented a scalable database architecture
 - Created efficient query patterns for real-time messaging
-- Integrated AI capabilities with traditional messaging features
+- Integrated mental health analysis features with traditional messaging
 - Implemented secure user authentication and authorization
 - Developed a responsive and intuitive user interface
 
@@ -103,5 +105,5 @@ npm run dev
 - API Design and Implementation
 - User Authentication and Security
 - Responsive UI Development
-- AI Integration
+- Natural Language Processing
 - Performance Optimization
