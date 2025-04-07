@@ -24,6 +24,8 @@ const Body: FC<BodyProps> = ({ initialMessages, conversation }) => {
   const [sentimentError, setSentimentError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const analysisTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAnalyzedMessagesCountRef = useRef<number>(0);
 
   const { conversationId } = useConversation();
 
@@ -44,12 +46,22 @@ const Body: FC<BodyProps> = ({ initialMessages, conversation }) => {
       return;
     }
     
+    // Skip if message count hasn't changed - prevents duplicate analysis
+    if (messages.length === lastAnalyzedMessagesCountRef.current) {
+      return;
+    }
+    
     setIsAnalyzing(true);
     setSentimentError(null);
     
     try {
+      // Clear any existing timer to avoid multiple analyses running
+      if (analysisTimerRef.current) {
+        clearTimeout(analysisTimerRef.current);
+      }
+      
       // Debounce the analysis for performance with large message sets
-      const timer = setTimeout(() => {
+      analysisTimerRef.current = setTimeout(() => {
         try {
           // Only analyze the messages if there are enough to form a meaningful analysis
           if (messages.length < 3) {
@@ -61,6 +73,8 @@ const Body: FC<BodyProps> = ({ initialMessages, conversation }) => {
               recommendations: ['Continue the conversation to get more insights.']
             });
             setIsAnalyzing(false);
+            // Update last analyzed count
+            lastAnalyzedMessagesCountRef.current = messages.length;
             return;
           }
 
@@ -73,16 +87,25 @@ const Body: FC<BodyProps> = ({ initialMessages, conversation }) => {
             keywords: result.keywords,
             recommendations: result.recommendations
           });
+          
+          // Update last analyzed count
+          lastAnalyzedMessagesCountRef.current = messages.length;
         } catch (innerError) {
           console.error("Error analyzing conversation sentiment:", innerError);
           setSentimentError("Could not analyze sentiment. Please try again later.");
           toast.error("Could not analyze conversation sentiment");
         } finally {
           setIsAnalyzing(false);
+          analysisTimerRef.current = null;
         }
       }, 500); // 500ms debounce
       
-      return () => clearTimeout(timer);
+      return () => {
+        if (analysisTimerRef.current) {
+          clearTimeout(analysisTimerRef.current);
+          analysisTimerRef.current = null;
+        }
+      };
     } catch (error) {
       console.error("Error in sentiment analysis effect:", error);
       setSentimentError("Could not analyze sentiment. Please try again later.");
