@@ -92,8 +92,9 @@ export async function POST(req: Request) {
 
       // Trigger Pusher events with safety checks and error handling
       try {
-        // For conversation channel
+        // For conversation channel - using consistent conversationId format
         if (conversationId) {
+          console.log('[PUSHER] Triggering messages:new on channel:', conversationId.toString());
           await pusherServer.trigger(conversationId.toString(), "messages:new", newMessage);
         }
 
@@ -109,9 +110,11 @@ export async function POST(req: Request) {
             const userEmail = userConversation.user?.email;
             
             if (userEmail) {
+              console.log('[PUSHER] Triggering conversation:update for user:', userEmail);
               await pusherServer.trigger(userEmail, "conversation:update", {
                 id: updatedConversation.id,
                 messages: [lastMessage],
+                lastMessageAt: updatedConversation.lastMessageAt
               });
             }
           }

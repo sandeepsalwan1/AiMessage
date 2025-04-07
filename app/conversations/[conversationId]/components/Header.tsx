@@ -8,13 +8,20 @@ import { FullConversationType } from "@/app/types";
 import Link from "next/link";
 import { FC, useMemo, useState } from "react";
 import { HiChevronLeft, HiEllipsisHorizontal } from "react-icons/hi2";
+import { FiBarChart2 } from "react-icons/fi";
 import ProfileDrawer from "./ProfileDrawer";
 
 interface HeaderProps {
 	conversation: FullConversationType;
+	showSentiment: boolean;
+	toggleSentiment: () => void;
 }
 
-const Header: FC<HeaderProps> = ({ conversation }) => {
+const Header: FC<HeaderProps> = ({ 
+	conversation, 
+	showSentiment, 
+	toggleSentiment 
+}) => {
 	const otherUser = useOtherUser(conversation);
 	const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -66,11 +73,23 @@ const Header: FC<HeaderProps> = ({ conversation }) => {
 						</div>
 					</div>
 				</div>
-				<HiEllipsisHorizontal
-					size={32}
-					onClick={() => setDrawerOpen(true)}
-					className="text-sky-500 cursor-pointer hover:text-sky-600 transition"
-				/>
+				<div className="flex items-center gap-4">
+					<button
+						onClick={toggleSentiment}
+						className={`p-2 rounded-full transition ${
+							showSentiment ? 'bg-sky-100 text-sky-600' : 'text-neutral-500 hover:text-sky-600'
+						}`}
+						title={showSentiment ? "Hide sentiment analysis" : "Show sentiment analysis"}
+					>
+						<FiBarChart2 size={20} />
+					</button>
+					<button
+						onClick={() => setDrawerOpen(true)}
+						className="text-sky-500 cursor-pointer hover:text-sky-600 transition"
+					>
+						<HiEllipsisHorizontal size={32} />
+					</button>
+				</div>
 			</div>
 		</>
 	);
