@@ -2,7 +2,7 @@
 
 ## Overview
 
-AiMessage is a full-stack AI messaging application that combines real-time communication with mental health awareness features. Built with modern web technologies, it demonstrates expertise in database design, real-time data management, NLP, and scalable architecture. Used tools like sentiment, react, Next.js, Prisma (with MySQL (Aiven)), Tailwind CSS, Javascript, Pusher, Github+Google OAUTH, and TypeScript for the complete deployment of this application.
+AiMessage is a full-stack AI messaging application that combines real-time communication with mental health awareness features. Built with modern web technologies, it demonstrates expertise in database design, real-time data management, NLP, and scalable architecture. Used tools like sentiment, React, Next.js, Prisma (with MySQL (Aiven)), Tailwind CSS, Javascript, Pusher, Github+Google OAUTH, and TypeScript for the complete deployment of this application.
 
 
 ## Screenshots
