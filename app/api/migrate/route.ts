@@ -5,8 +5,9 @@ export async function GET(request: Request) {
   // Simple auth check - you should use a proper secret
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get("secret");
-  
-  if (secret !== "your-migration-secret-123") {
+  const expected = process.env.MIGRATE_SECRET || "your-migration-secret-123";
+
+  if (secret !== expected) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
