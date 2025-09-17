@@ -13,6 +13,15 @@ export async function POST(req: Request) {
       return new NextResponse("Missing fields.", { status: 400 });
     }
 
+    // Prevent duplicate accounts
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await prisma.user.create({
@@ -32,8 +41,12 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(user);
-  } catch (error) {
+  } catch (error: any) {
     console.log("[REGISTRATION_ERROR]", error);
+    // Handle Prisma unique constraint error just in case of race condition
+    if (error?.code === "P2002") {
+      return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+    }
     return new NextResponse("Error while registering user.", { status: 500 });
   }
 }

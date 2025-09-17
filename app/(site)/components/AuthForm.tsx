@@ -47,7 +47,7 @@ const AuthForm = () => {
     },
   });
 
-  const onSubmit: SubmitHandler<FieldValues> = (data) => {
+  const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     setIsLoading(true);
 
     if (!data) {
@@ -56,33 +56,51 @@ const AuthForm = () => {
     }
 
     if (variant === "REGISTER") {
-      axios
-        .post("/api/register", data)
-        .then(() => {
-          signIn("credentials", data);
-        })
-        .catch((err) => {
-          console.log(err);
-          toast.error("Something went wrong!");
+      try {
+        await axios.post("/api/register", data);
+        const callback = await signIn("credentials", {
+          email: data.email,
+          password: data.password,
+          redirect: false,
         });
+
+        if (callback?.error) {
+          toast.error(callback.error || "Invalid credentials!");
+        } else {
+          toast.success("Account created!");
+          router.push("/users");
+        }
+      } catch (err: any) {
+        if (err?.response?.status === 409) {
+          toast.error("Email already registered");
+        } else if (err?.response?.data) {
+          toast.error(typeof err.response.data === 'string' ? err.response.data : 'Registration failed');
+        } else {
+          toast.error("Something went wrong!");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+      return;
     }
 
     if (variant === "LOGIN") {
-      signIn("credentials", {
-        ...data,
+      const callback = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
         redirect: false,
-      }).then((callback) => {
-        if (callback?.error) {
-          toast.error("Invalid credentials!");
-        }
-        if (callback?.ok && !callback?.error) {
-          toast.success("Logged in!");
-          router.push("/users");
-        }
       });
-    }
 
-    setIsLoading(false);
+      if (callback?.error) {
+        toast.error("Invalid credentials!");
+      }
+      if (callback?.ok && !callback?.error) {
+        toast.success("Logged in!");
+        router.push("/users");
+      }
+      setIsLoading(false);
+      return;
+    }
   };
 
   const socialAction = (action: string) => {
