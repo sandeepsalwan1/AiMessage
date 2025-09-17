@@ -74,9 +74,12 @@ const AuthForm = () => {
         if (err?.response?.status === 409) {
           toast.error("Email already registered");
         } else if (err?.response?.data) {
-          toast.error(typeof err.response.data === 'string' ? err.response.data : 'Registration failed');
+          const errorMessage = typeof err.response.data === 'string'
+            ? err.response.data
+            : err.response.data.error || err.response.data.message || 'Registration failed';
+          toast.error(errorMessage);
         } else {
-          toast.error("Something went wrong!");
+          toast.error("Registration failed");
         }
       } finally {
         setIsLoading(false);
@@ -85,20 +88,23 @@ const AuthForm = () => {
     }
 
     if (variant === "LOGIN") {
-      const callback = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+      try {
+        const callback = await signIn("credentials", {
+          email: data.email,
+          password: data.password,
+          redirect: false,
+        });
 
-      if (callback?.error) {
-        toast.error("Invalid credentials!");
+        if (callback?.error) {
+          toast.error("Invalid credentials!");
+        }
+        if (callback?.ok && !callback?.error) {
+          toast.success("Logged in!");
+          router.push("/users");
+        }
+      } finally {
+        setIsLoading(false);
       }
-      if (callback?.ok && !callback?.error) {
-        toast.success("Logged in!");
-        router.push("/users");
-      }
-      setIsLoading(false);
       return;
     }
   };
