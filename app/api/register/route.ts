@@ -79,7 +79,28 @@ export async function POST(req: Request) {
     // Prisma initialization/connection errors
     if (typeof error?.code === 'string' && error.code.startsWith('P10')) {
       // P1000..P1017 are connection/auth/timeout errors
-      return NextResponse.json({ error: `Database connection error (${error.code})` }, { status: 500 });
+      return NextResponse.json({ 
+        error: "Database connection error",
+        code: error.code,
+        hint: "Verify DATABASE_URL and SSL settings for Aiven MySQL (e.g., add ?sslaccept=strict)"
+      }, { status: 500 });
+    }
+
+    // Missing table / not migrated yet
+    const messageText = String(error?.message || '').toLowerCase();
+    if (messageText.includes('doesn\'t exist') || messageText.includes('no such table') || messageText.includes('er_no_such_table')) {
+      return NextResponse.json({ 
+        error: "Database not migrated",
+        hint: "Run `npx prisma migrate deploy` or open /api/migrate with the secret"
+      }, { status: 500 });
+    }
+
+    // Low-level network errors
+    if (error?.code === 'ECONNREFUSED' || messageText.includes('getaddrinfo') || messageText.includes('connect etimedout')) {
+      return NextResponse.json({ 
+        error: "Cannot reach database",
+        hint: "Check host/port/firewall and SSL requirements for your Aiven instance"
+      }, { status: 500 });
     }
 
     // Fallback (include message in non-production for TDD diagnostics)
