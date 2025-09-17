@@ -76,6 +76,17 @@ const createClient = () => {
     return new MockPrismaClient() as unknown as PrismaClient;
   }
   
+  // Ensure Aiven MySQL connections use SSL if not explicitly provided
+  const originalUrl = process.env.DATABASE_URL || "";
+  const needsSsl = originalUrl.startsWith("mysql://") && !/[?&](sslaccept|ssl-mode)=/i.test(originalUrl);
+  const urlWithSsl = needsSsl
+    ? originalUrl + (originalUrl.includes("?") ? "&" : "?") + "sslaccept=strict"
+    : originalUrl;
+
+  if (needsSsl) {
+    process.env.DATABASE_URL = urlWithSsl;
+  }
+
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   });
