@@ -1,0 +1,26 @@
+ .gitignore                                         |   1 +
+ app/actions/getConversationById.ts                 |  64 ++-
+ app/actions/getMessages.ts                         |   1 +
+ app/api/conversations/[conversationId]/route.ts    |   6 +-
+ app/api/messages/route.ts                          | 256 ++++++----
+ app/api/pusher/auth/route.ts                       |  45 ++
+ app/components/MentalHealthAlert.tsx               |  84 ++++
+ app/components/avatar.tsx                          |   1 +
+ .../[conversationId]/components/Body.tsx           |  76 +--
+ .../components/ConversationBox.tsx                 |   6 +
+ .../components/ConversationSentiment.tsx           |  59 +++
+ .../[conversationId]/components/Form.tsx           |  48 +-
+ .../[conversationId]/components/Header.tsx         | 127 ++++-
+ .../[conversationId]/components/MessageBox.tsx     |  40 +-
+ app/conversations/[conversationId]/page.tsx        |  76 ++-
+ app/conversations/components/ConversationBox.tsx   |  83 +++-
+ app/libs/prismadb.ts                               |  20 +-
+ app/libs/pusher.ts                                 |  15 +-
+ app/types/index.ts                                 |  26 +-
+ app/utils/mentalHealth.ts                          | 168 +++++++
+ package-lock.json                                  | 543 ++++++++++++++++++++-
+ package.json                                       |   4 +
+ pages/api/pusher/auth.ts                           |  26 -
+ .../migration.sql                                  |  36 ++
+ prisma/schema.prisma                               |  43 +-
+ 25 files changed, 1566 insertions(+), 288 deletions(-)

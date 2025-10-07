@@ -113,56 +113,59 @@ const ConversationList: FC<ConversationListProps> = ({ conversations, users }) =
     pusherClient.subscribe(pusherKey);
 
     const newHandler = (conversation: FullConversationType) => {
+      console.log('[PUSHER-Client] Received conversation:new', conversation.id);
+      setLocalConversations((current) => {
+        if (current.find((item) => item.id === conversation.id)) {
+          return current;
+        }
+        return [conversation, ...current];
+      });
+      
+      // Also update items directly
       setItems((current) => {
         if (current.find((item) => item.id === conversation.id)) {
           return current;
         }
-
-        // Also update our local conversation state
-        setLocalConversations(prev => {
-          if (prev.find(item => item.id === conversation.id)) {
-            return prev;
-          }
-          return [conversation, ...prev];
-        });
-
         return [conversation, ...current];
       });
     };
 
     const updateHandler = (conversation: FullConversationType) => {
-      setItems((current) =>
-        current.map((item) => {
-          if (item.id === conversation.id) {
-            return {
-              ...item,
-              messages: conversation.messages,
-            };
-          }
-
-          return item;
-        })
-      );
-
-      // Also update our local conversation state
+      console.log('[PUSHER-Client] Received conversation:update', conversation.id);
       setLocalConversations(prev => 
         prev.map(item => {
           if (item.id === conversation.id) {
             return {
               ...item,
               messages: conversation.messages,
+              lastMessageAt: conversation.lastMessageAt || item.lastMessageAt
             };
           }
           return item;
         })
       );
+      
+      // Also update items directly to ensure UI refresh
+      setItems(prev => 
+        prev.map(item => {
+          if (item.id === conversation.id) {
+            return {
+              ...item,
+              messages: conversation.messages,
+              lastMessageAt: conversation.lastMessageAt || item.lastMessageAt
+            };
+          }
+          return item;
+        })
+      );
+      
+      // Force router refresh to ensure UI updates
+      router.refresh();
     };
 
     const removeHandler = (conversation: FullConversationType) => {
-      setItems((current) => current.filter((item) => item.id !== conversation.id));
-      
-      // Also update our local conversation state
       setLocalConversations(prev => prev.filter(item => item.id !== conversation.id));
+      setItems(prev => prev.filter(item => item.id !== conversation.id));
       
       if (conversationId === conversation.id.toString()) {
         router.push("/conversations");
@@ -188,6 +191,41 @@ const ConversationList: FC<ConversationListProps> = ({ conversations, users }) =
   useEffect(() => {
     setItems(deduplicatedItems);
   }, [deduplicatedItems]);
+  
+  // Listen for message:sent events
+  useEffect(() => {
+    const handleMessageSent = (e: any) => {
+      console.log('[ConversationList] Received message:sent event', e.detail);
+      
+      // Force a refresh to update the conversation list
+      router.refresh();
+      
+      // Update our local conversations with the latest message
+      if (e.detail?.conversationId && e.detail?.message) {
+        const conversationIdStr = e.detail.conversationId.toString();
+        
+        setLocalConversations(prev => {
+          return prev.map(conv => {
+            if (conv.id.toString() === conversationIdStr) {
+              const updatedConv = {
+                ...conv,
+                lastMessageAt: new Date().toISOString(),
+                messages: [e.detail.message, ...(conv.messages || [])]
+              };
+              return updatedConv;
+            }
+            return conv;
+          });
+        });
+      }
+    };
+    
+    window.addEventListener('message:sent', handleMessageSent);
+    
+    return () => {
+      window.removeEventListener('message:sent', handleMessageSent);
+    };
+  }, [router]);
 
   return (
     <>

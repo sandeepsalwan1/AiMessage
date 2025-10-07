@@ -112,19 +112,38 @@ export async function POST(request: Request) {
         }
       });
 
-      return {
-        message: newMessage,
-        sentiment: conversationSentiment
-      };
-    });
+      // Trigger Pusher events with safety checks and error handling
+      try {
+        // For conversation channel - using consistent conversationId format
+        if (conversationId) {
+          console.log('[PUSHER] Triggering messages:new on channel:', conversationId.toString());
+          await pusherServer.trigger(conversationId.toString(), "messages:new", newMessage);
+        }
 
-    // Update conversation last message time
-    await prisma.conversation.update({
-      where: {
-        id: numericConversationId
-      },
-      data: {
-        lastMessageAt: new Date()
+        // For individual user channels
+        if (updatedConversation.users && updatedConversation.users.length > 0 && 
+            updatedConversation.messages && updatedConversation.messages.length > 0) {
+          
+          // Get the last message
+          const lastMessage = updatedConversation.messages[0];
+          
+          // For each user, trigger a conversation update
+          for (const userConversation of updatedConversation.users) {
+            const userEmail = userConversation.user?.email;
+            
+            if (userEmail) {
+              console.log('[PUSHER] Triggering conversation:update for user:', userEmail);
+              await pusherServer.trigger(userEmail, "conversation:update", {
+                id: updatedConversation.id,
+                messages: [lastMessage],
+                lastMessageAt: updatedConversation.lastMessageAt
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("PUSHER_ERROR", error);
+        // Continue execution even if Pusher fails
       }
     });
 

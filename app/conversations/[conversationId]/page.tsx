@@ -7,7 +7,6 @@ import EmptyState from "@/app/components/EmptyState";
 import Header from "./components/Header";
 import Body from "./components/Body";
 import Form from "./components/Form";
-import { FullConversationType } from "@/app/types";
 
 interface IParams {
 	conversationId: string;
@@ -86,8 +85,7 @@ const ConversationId = ({ params }: { params: IParams }) => {
 	return (
 		<div className="lg:pl-80 h-full">
 			<div className="h-full flex flex-col">
-				<Header conversation={conversation} />
-				<Body initialMessages={messages} conversationId={params.conversationId} />
+				<Body initialMessages={messages} conversation={conversation} />
 				<Form />
 			</div>
 		</div>

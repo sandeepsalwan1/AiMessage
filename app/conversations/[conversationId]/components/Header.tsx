@@ -8,23 +8,20 @@ import { FullConversationType } from "@/app/types";
 import Link from "next/link";
 import { FC, useEffect, useMemo, useState } from "react";
 import { HiChevronLeft, HiEllipsisHorizontal } from "react-icons/hi2";
-import { MdSentimentVerySatisfied, MdSentimentVeryDissatisfied, MdSentimentNeutral } from "react-icons/md";
+import { FiBarChart2 } from "react-icons/fi";
 import ProfileDrawer from "./ProfileDrawer";
 
 interface HeaderProps {
 	conversation: FullConversationType;
+	showSentiment: boolean;
+	toggleSentiment: () => void;
 }
 
-interface SentimentDisplayInfo {
-	icon: JSX.Element;
-	color: string;
-	bgColor: string;
-	text: string;
-	description: string;
-	score: number;
-}
-
-const Header: FC<HeaderProps> = ({ conversation }) => {
+const Header: FC<HeaderProps> = ({ 
+	conversation, 
+	showSentiment, 
+	toggleSentiment 
+}) => {
 	const otherUser = useOtherUser(conversation);
 	const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -128,24 +125,23 @@ const Header: FC<HeaderProps> = ({ conversation }) => {
 						className="text-sky-500 cursor-pointer hover:text-sky-600 transition"
 					/>
 				</div>
-				{sentimentInfo && (
-					<div className={`mt-3 w-full ${sentimentInfo.bgColor} ${sentimentInfo.color} px-4 py-3 rounded-lg shadow-sm border border-opacity-10`}>
-						<div className="flex items-center gap-3">
-							{sentimentInfo.icon}
-							<div className="flex-1">
-								<div className="flex items-center justify-between">
-									<span className="font-medium">{sentimentInfo.text}</span>
-									<span className="text-sm font-medium">
-										Score: {sentimentInfo.score}/100
-									</span>
-								</div>
-								<p className="text-sm opacity-90 mt-0.5">
-									{sentimentInfo.description}
-								</p>
-							</div>
-						</div>
-					</div>
-				)}
+				<div className="flex items-center gap-4">
+					<button
+						onClick={toggleSentiment}
+						className={`p-2 rounded-full transition ${
+							showSentiment ? 'bg-sky-100 text-sky-600' : 'text-neutral-500 hover:text-sky-600'
+						}`}
+						title={showSentiment ? "Hide sentiment analysis" : "Show sentiment analysis"}
+					>
+						<FiBarChart2 size={20} />
+					</button>
+					<button
+						onClick={() => setDrawerOpen(true)}
+						className="text-sky-500 cursor-pointer hover:text-sky-600 transition"
+					>
+						<HiEllipsisHorizontal size={32} />
+					</button>
+				</div>
 			</div>
 		</>
 	);
