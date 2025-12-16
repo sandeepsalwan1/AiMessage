@@ -5,14 +5,9 @@ import { pusherServer } from "@/app/libs/pusher";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  // Debug: Log FULL environment variables so we can see exactly what's set
-  const dbUrl = process.env.DATABASE_URL || "NOT_SET";
-  const directUrl = process.env.DIRECT_URL || "NOT_SET";
-  
-  console.log("===========================================");
-  console.log("[DEBUG] FULL DATABASE_URL:", dbUrl);
-  console.log("[DEBUG] FULL DIRECT_URL:", directUrl);
-  console.log("===========================================");
+  // Debug logging
+  console.log("[DEBUG] DATABASE_URL:", process.env.DATABASE_URL);
+  console.log("[DEBUG] DIRECT_URL:", process.env.DIRECT_URL);
   
   try {
     const body = await req.json();
