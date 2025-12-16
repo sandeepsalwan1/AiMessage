@@ -40,9 +40,17 @@ export async function POST(req: Request) {
 
     return NextResponse.json(user);
   } catch (error: any) {
-    console.error("[REGISTRATION_ERROR] Full error:", error);
+    console.error("[REGISTRATION_ERROR] Full error:", JSON.stringify(error, null, 2));
     console.error("[REGISTRATION_ERROR] Message:", error?.message);
     console.error("[REGISTRATION_ERROR] Code:", error?.code);
-    return new NextResponse(`Registration error: ${error?.message || "Unknown error"}`, { status: 500 });
+    
+    // Return detailed error for debugging
+    return NextResponse.json({
+      error: true,
+      message: error?.message || "Unknown error",
+      code: error?.code,
+      meta: error?.meta,
+      dbUrl: process.env.DATABASE_URL ? "SET" : "NOT SET",
+    }, { status: 500 });
   }
 }
