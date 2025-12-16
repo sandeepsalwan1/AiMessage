@@ -5,10 +5,14 @@ import { pusherServer } from "@/app/libs/pusher";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  // Debug: Log environment variables (masked)
-  const dbUrl = process.env.DATABASE_URL;
-  console.log("[DEBUG] DATABASE_URL exists:", !!dbUrl);
-  console.log("[DEBUG] DATABASE_URL starts with:", dbUrl?.substring(0, 30) + "...");
+  // Debug: Log FULL environment variables so we can see exactly what's set
+  const dbUrl = process.env.DATABASE_URL || "NOT_SET";
+  const directUrl = process.env.DIRECT_URL || "NOT_SET";
+  
+  console.log("===========================================");
+  console.log("[DEBUG] FULL DATABASE_URL:", dbUrl);
+  console.log("[DEBUG] FULL DIRECT_URL:", directUrl);
+  console.log("===========================================");
   
   try {
     const body = await req.json();
@@ -44,13 +48,13 @@ export async function POST(req: Request) {
     console.error("[REGISTRATION_ERROR] Message:", error?.message);
     console.error("[REGISTRATION_ERROR] Code:", error?.code);
     
-    // Return detailed error for debugging
+    // Return detailed error for debugging - show FULL URLs
     return NextResponse.json({
       error: true,
       message: error?.message || "Unknown error",
       code: error?.code,
-      meta: error?.meta,
-      dbUrl: process.env.DATABASE_URL ? "SET" : "NOT SET",
+      DATABASE_URL: process.env.DATABASE_URL || "NOT_SET",
+      DIRECT_URL: process.env.DIRECT_URL || "NOT_SET",
     }, { status: 500 });
   }
 }
