@@ -23,6 +23,7 @@ AiMessage is a full-stack AI messaging application that combines real-time commu
   <img src="public/screenshots/delete-convo.png" alt="Conversation Management" width="800"/>
   <p><em>Conversation management with delete functionality</em></p>
 </div>
+<img width="998" height="1150" alt="Screenshot 2025-12-17 at 9 52 21 AM" src="https://github.com/user-attachments/assets/70f70bd1-f416-428b-9a9e-5e7f9a5b422a" />
 
 ## Key Features
 
