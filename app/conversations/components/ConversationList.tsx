@@ -110,7 +110,7 @@ const ConversationList: FC<ConversationListProps> = ({ conversations, users }) =
       return;
     }
 
-    pusherClient.subscribe(pusherKey);
+    const channel = pusherClient.subscribe(pusherKey);
 
     const newHandler = (conversation: FullConversationType) => {
       console.log('[PUSHER-Client] Received conversation:new', conversation.id);
@@ -121,7 +121,6 @@ const ConversationList: FC<ConversationListProps> = ({ conversations, users }) =
         return [conversation, ...current];
       });
       
-      // Also update items directly
       setItems((current) => {
         if (current.find((item) => item.id === conversation.id)) {
           return current;
@@ -145,7 +144,6 @@ const ConversationList: FC<ConversationListProps> = ({ conversations, users }) =
         })
       );
       
-      // Also update items directly to ensure UI refresh
       setItems(prev => 
         prev.map(item => {
           if (item.id === conversation.id) {
@@ -159,7 +157,6 @@ const ConversationList: FC<ConversationListProps> = ({ conversations, users }) =
         })
       );
       
-      // Force router refresh to ensure UI updates
       router.refresh();
     };
 
@@ -172,15 +169,16 @@ const ConversationList: FC<ConversationListProps> = ({ conversations, users }) =
       }
     };
 
-    pusherClient.bind("conversation:new", newHandler);
-    pusherClient.bind("conversation:update", updateHandler);
-    pusherClient.bind("conversation:remove", removeHandler);
+    // Bind to the specific channel, not globally
+    channel.bind("conversation:new", newHandler);
+    channel.bind("conversation:update", updateHandler);
+    channel.bind("conversation:remove", removeHandler);
 
     return () => {
+      channel.unbind("conversation:new", newHandler);
+      channel.unbind("conversation:update", updateHandler);
+      channel.unbind("conversation:remove", removeHandler);
       pusherClient.unsubscribe(pusherKey);
-      pusherClient.unbind("conversation:new", newHandler);
-      pusherClient.unbind("conversation:update", updateHandler);
-      pusherClient.unbind("conversation:remove", removeHandler);
     };
   }, [pusherKey, conversationId, router]);
 

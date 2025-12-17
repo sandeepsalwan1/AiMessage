@@ -114,7 +114,7 @@ const Body: FC<BodyProps> = ({ initialMessages, conversation }) => {
   }, [messages]);
 
   useEffect(() => {
-    pusherClient.subscribe(conversationId);
+    const channel = pusherClient.subscribe(conversationId);
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
     const messageHandler = (message: FullMessageType) => {
@@ -122,11 +122,9 @@ const Body: FC<BodyProps> = ({ initialMessages, conversation }) => {
       axios.post(`/api/conversations/${conversationId}/seen`);
       
       setMessages((messages) => {
-        // Check if we already have this message
         if (find(messages, { id: message.id })) {
           return messages;
         }
-
         return [...messages, message];
       });
 
@@ -140,23 +138,22 @@ const Body: FC<BodyProps> = ({ initialMessages, conversation }) => {
           if (m.id === message.id) {
             return message;
           }
-
           return m;
         })
       );
     };
 
-    // Debug the subscription
     console.log('[PUSHER-Body] Subscribing to channel:', conversationId);
     
-    pusherClient.bind("messages:new", messageHandler);
-    pusherClient.bind("message:update", updateMessageHandler);
+    // Bind to the specific channel, not globally
+    channel.bind("messages:new", messageHandler);
+    channel.bind("message:update", updateMessageHandler);
 
     return () => {
       console.log('[PUSHER-Body] Unsubscribing from channel:', conversationId);
+      channel.unbind("messages:new", messageHandler);
+      channel.unbind("message:update", updateMessageHandler);
       pusherClient.unsubscribe(conversationId);
-      pusherClient.unbind("messages:new", messageHandler);
-      pusherClient.unbind("message:update", updateMessageHandler);
     };
   }, [conversationId]);
 
