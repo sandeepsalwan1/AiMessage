@@ -10,6 +10,7 @@ const nextConfig = {
 			"res.cloudinary.com",
 			"avatars.githubusercontent.com",
 			"lh3.googleusercontent.com",
+			"randomuser.me",
 		],
 	},
 	// Added to handle Vercel build process which runs API routes during build
